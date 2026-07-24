@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irregular Verbs Trainer</title>
+    <style>
+        :root {
+            --primary-lavender: #9d8ec7;
+            --primary-hover: #8876b5;
+            --bg-lavender: #f4f0fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-lavender);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(157, 142, 199, 0.2);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        /* Кнопки в лавандовом стиле */
+        button {
+            background-color: var(--primary-lavender);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-main {
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px;
+            font-size: 18px;
+        }
+
+        .btn-secondary {
+            background-color: #e0d8f0;
+            color: #4a3e6d;
+            margin: 5px;
+        }
+
+        .btn-secondary.active {
+            background-color: var(--primary-lavender);
+            color: white;
+        }
+
+        .btn-finish {
+            background-color: #d9777f;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .btn-finish:hover {
+            background-color: #c55d65;
+        }
+
+        /* Таблица глаголов */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            border: 1px solid #e0d8f0;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-lavender);
+            color: #5a4b82;
+        }
+
+        /* Карточка вопроса */
+        .card {
+            background: #faf8fc;
+            border: 2px solid #e8e1f5;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .word-prompt {
+            font-size: 26px;
+            font-weight: bold;
+            color: #4a3e6d;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .option-btn {
+            background-color: white;
+            color: var(--text-color);
+            border: 2px solid #e0d8f0;
+            padding: 14px;
+            border-radius: 8px;
+        }
+
+        .option-btn:hover {
+            background-color: var(--bg-lavender);
+        }
+
+        /* Динамические цвета ответов */
+        .option-btn.btn-correct {
+            background-color: var(--correct-color) !important;
+            color: white !important;
+            border-color: var(--correct-color) !important;
+        }
+
+        .option-btn.btn-incorrect {
+            background-color: var(--incorrect-color) !important;
+            color: white !important;
+            border-color: var(--incorrect-color) !important;
+        }
+
+        input[type="text"] {
+            width: 90%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #e0d8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-lavender);
+        }
+
+        .comment-hint {
+            margin-top: 10px;
+            font-weight: bold;
+            color: var(--incorrect-color);
+            font-size: 15px;
+        }
+
+        .mistakes-list {
+            text-align: left;
+            background: #fff5f5;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid var(--incorrect-color);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>🇬🇧 Irregular Verbs</h2>
+
+        <!-- 1. ГЛАВНАЯ СТРАНИЦА: Справочник глаголов -->
+        <div id="screen-home">
+            <table>
+                <thead>
+                    <tr>
+                        <th>V1</th>
+                        <th>V2</th>
+                        <th>V3</th>
+                        <th>Перевод</th>
+                    </tr>
+                </thead>
+                <tbody id="verbs-table-body"></tbody>
+            </table>
+            <button class="btn-main" onclick="startTesting()">Test yourself!</button>
+        </div>
+
+        <!-- 2. ЭКРАН ТЕСТИРОВАНИЯ -->
+        <div id="screen-test" style="display: none;">
+            <!-- Переключатель режима практики -->
+            <div>
+                <button class="btn-secondary active" onclick="setTestType('fill')">Write</button>
+                <button class="btn-secondary" onclick="setTestType('translate')">translate</button>
+                <button class="btn-secondary" onclick="setTestType('mc')">Choose V2 and V3</button>
+            </div>
+
+            <div class="card">
+                <div id="test-prompt" class="word-prompt">...</div>
+                <div id="test-body"></div>
+                <div id="test-comment" class="comment-hint"></div>
+            </div>
+
+            <button class="btn-finish" onclick="finishTesting()">Finish!</button>
+        </div>
+
+        <!-- 3. ЭКРАН РЕЗУЛЬТАТОВ -->
+        <div id="screen-results" style="display: none;">
+            <h3>Results</h3>
+            <p style="font-size: 20px;">Correct: <b id="res-score" style="color: var(--correct-color);">0</b> из <b
+                    id="res-total">0</b></p>
+
+            <div id="mistakes-container" style="display: none;">
+                <h4>Mistakes:</h4>
+                <div class="mistakes-list" id="mistakes-list"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" style="flex:1" onclick="showHomeScreen()">See verbs</button>
+                <button style="flex:1" onclick="startTesting()">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allVerbs = [];
+        let currentVerb = null;
+        let currentTestType = 'fill'; // 'fill', 'translate', 'mc'
+
+        // Статистика сессии
+        let stats = { total: 0, correct: 0, mistakes: new Set() };
+        let isAnswered = false;
+
+        // Инициализация при загрузке
+        window.onload = async () => {
+            await loadVerbsList();
+        };
+
+        // Загрузка таблицы глаголов
+        async function loadVerbsList() {
+            const response = await fetch('/api/verbs');
+            allVerbs = await response.json();
+
+            const tbody = document.getElementById('verbs-table-body');
+            tbody.innerHTML = '';
+            allVerbs.forEach(v => {
+                tbody.innerHTML += `<tr>
+                <td><b>${v.infinitive}</b></td>
+                <td>${v.pastSimple}</td>
+                <td>${v.pastParticiple}</td>
+                <td>${v.translation}</td>
+            </tr>`;
+            });
+        }
+
+        function showHomeScreen() {
+            document.getElementById('screen-home').style.display = 'block';
+            document.getElementById('screen-test').style.display = 'none';
+            document.getElementById('screen-results').style.display = 'none';
+        }
+
+        function startTesting() {
+            stats = { total: 0, correct: 0, mistakes: new Set() };
+            document.getElementById('screen-home').style.display = 'none';
+            document.getElementById('screen-results').style.display = 'none';
+            document.getElementById('screen-test').style.display = 'block';
+            nextQuestion();
+        }
+
+        function setTestType(type) {
+            currentTestType = type;
+            document.querySelectorAll('#screen-test .btn-secondary').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            nextQuestion();
+        }
+
+        function getRandomVerb() {
+            return allVerbs[Math.floor(Math.random() * allVerbs.length)];
+        }
+
+        // Генерация нового вопроса
+        function nextQuestion() {
+            if (!allVerbs.length) return;
+            isAnswered = false;
+            currentVerb = getRandomVerb();
+            document.getElementById('test-comment').innerText = '';
+
+            const promptEl = document.getElementById('test-prompt');
+            const bodyEl = document.getElementById('test-body');
+
+            if (currentTestType === 'fill') {
+                // Режим 1: Ввод V2 и V3 по V1
+                promptEl.innerText = `${currentVerb.infinitive} (${currentVerb.translation})`;
+                bodyEl.innerHTML = `
+                <input type="text" id="input-v2" placeholder="Past Simple (V2)">
+                <input type="text" id="input-v3" placeholder="Past Participle (V3)">
+                <button class="btn-main" id="btn-submit" onclick="checkFillAnswers()">Проверить</button>
+            `;
+            }
+            else if (currentTestType === 'translate') {
+                // Режим 2: Перевод (слово на русском -> выбор 2 форм)
+                promptEl.innerText = currentVerb.translation;
+                generateMultipleChoiceOptions(bodyEl, `${currentVerb.pastSimple} / ${currentVerb.pastParticiple}`);
+            }
+            else if (currentTestType === 'mc') {
+                // Режим 3: V1 -> выбор V2 и V3
+                promptEl.innerText = currentVerb.infinitive;
+                generateMultipleChoiceOptions(bodyEl, `${currentVerb.pastSimple} / ${currentVerb.pastParticiple}`);
+            }
+        }
+
+        // Генерация варантов ответов для тестов с выбором
+        function generateMultipleChoiceOptions(container, correctAnswer) {
+            let wrongOptions = allVerbs
+                .filter(v => v.id !== currentVerb.id)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3)
+                .map(v => `${v.pastSimple} / ${v.pastParticiple}`);
+
+            let options = [...wrongOptions, correctAnswer].sort(() => 0.5 - Math.random());
+
+            let html = '<div class="options-grid">';
+            options.forEach(opt => {
+                // Экранируем кавычки для безопасности
+                let safeOpt = opt.replace(/'/g, "\\'");
+                html += `<button class="option-btn" onclick="checkOption(this, '${safeOpt}', '${correctAnswer.replace(/'/g, "\\'")}')">${opt}</button>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Проверка выбора в тестах
+        function checkOption(button, selected, correct) {
+            if (isAnswered) return;
+            isAnswered = true;
+            stats.total++;
+
+            if (selected === correct) {
+                button.classList.add('btn-correct');
+                stats.correct++;
+                setTimeout(() => nextQuestion(), 1000);
+            } else {
+                button.classList.add('btn-incorrect');
+                stats.mistakes.add(`${currentVerb.infinitive} — ${currentVerb.pastSimple} / ${currentVerb.pastParticiple} (${currentVerb.translation})`);
+
+                // Подсвечиваем правильный вариант
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    if (btn.innerText === correct) btn.classList.add('btn-correct');
+                });
+                document.getElementById('test-comment').innerText = `Правильно: ${correct}`;
+                setTimeout(() => nextQuestion(), 2000);
+            }
+        }
+
+        // Проверка при ручном вводе
+        function checkFillAnswers() {
+            if (isAnswered) return;
+
+            const v2Val = document.getElementById('input-v2').value.trim().toLowerCase();
+            const v3Val = document.getElementById('input-v3').value.trim().toLowerCase();
+
+            const isV2Correct = v2Val === currentVerb.pastSimple.toLowerCase();
+            const isV3Correct = v3Val === currentVerb.pastParticiple.toLowerCase();
+
+            const btn = document.getElementById('btn-submit');
+            isAnswered = true;
+            stats.total++;
+
+            if (isV2Correct && isV3Correct) {
+                btn.style.backgroundColor = 'var(--correct-color)';
+                stats.correct++;
+                setTimeout(() => nextQuestion(), 1000);
+            } else {
+                btn.style.backgroundColor = 'var(--incorrect-color)';
+                stats.mistakes.add(`${currentVerb.infinitive} — ${currentVerb.pastSimple} / ${currentVerb.pastParticiple} (${currentVerb.translation})`);
+                document.getElementById('test-comment').innerText = `Правильный ответ: ${currentVerb.pastSimple} / ${currentVerb.pastParticiple}`;
+                setTimeout(() => nextQuestion(), 2200);
+            }
+        }
+
+        // Завершение теста и показ итогов
+        function finishTesting() {
+            document.getElementById('screen-test').style.display = 'none';
+            document.getElementById('screen-results').style.display = 'block';
+
+            document.getElementById('res-score').innerText = stats.correct;
+            document.getElementById('res-total').innerText = stats.total;
+
+            const mistakesContainer = document.getElementById('mistakes-container');
+            const mistakesList = document.getElementById('mistakes-list');
+
+            if (stats.mistakes.size > 0) {
+                mistakesContainer.style.display = 'block';
+                mistakesList.innerHTML = Array.from(stats.mistakes)
+                    .map(m => `<div>• ${m}</div>`)
+                    .join('');
+            } else {
+                mistakesContainer.style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

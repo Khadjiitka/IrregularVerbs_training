@@ -15,6 +15,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseStaticFiles();  //разрешает серверу отдавать HTML, CSS и JS
+
 // Создаём базу данных при старте
 using (var scope = app.Services.CreateScope())
 {
