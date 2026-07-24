@@ -1,6 +1,0 @@
-@IrregularVerbsApp_HostAddress = http://localhost:5263
-
-GET {{IrregularVerbsApp_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

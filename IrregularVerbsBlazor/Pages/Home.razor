@@ -1,0 +1,454 @@
+﻿@page "/"
+@using IrregularVerbsBlazor.Models
+@inject HttpClient Http
+
+<style>
+    :root {
+        --primary-lavender: #9d8ec7;
+        --primary-hover: #8876b5;
+        --bg-lavender: #f4f0fa;
+        --card-bg: #ffffff;
+        --text-color: #333333;
+        --correct-color: #28a745;
+        --incorrect-color: #dc3545;
+    }
+
+    .container {
+        background: var(--card-bg);
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(157, 142, 199, 0.2);
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    /* Кнопки в лавандовом стиле */
+    button {
+        background-color: var(--primary-lavender);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    button:hover {
+        background-color: var(--primary-hover);
+    }
+
+    .btn-main {
+        width: 100%;
+        margin-top: 20px;
+        padding: 14px;
+        font-size: 18px;
+    }
+
+    .btn-secondary {
+        background-color: #e0d8f0;
+        color: #4a3e6d;
+        margin: 5px;
+    }
+
+    .btn-secondary.active {
+        background-color: var(--primary-lavender);
+        color: white;
+    }
+
+    .btn-finish {
+        background-color: #d9777f;
+        margin-top: 20px;
+        width: 100%;
+    }
+
+    .btn-finish:hover {
+        background-color: #c55d65;
+    }
+
+    /* Таблица глаголов */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th, td {
+        border: 1px solid #e0d8f0;
+        padding: 10px;
+        text-align: left;
+    }
+
+    th {
+        background-color: var(--bg-lavender);
+        color: #5a4b82;
+    }
+
+    /* Карточка вопроса */
+    .card {
+        background: #faf8fc;
+        border: 2px solid #e8e1f5;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 20px 0;
+    }
+
+    .word-prompt {
+        font-size: 26px;
+        font-weight: bold;
+        color: #4a3e6d;
+    }
+
+    .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 15px;
+    }
+
+    .option-btn {
+        background-color: white;
+        color: var(--text-color);
+        border: 2px solid #e0d8f0;
+        padding: 14px;
+        border-radius: 8px;
+    }
+
+    .option-btn:hover {
+        background-color: var(--bg-lavender);
+    }
+
+    /* Динамические цвета ответов */
+    .option-btn.btn-correct {
+        background-color: var(--correct-color) !important;
+        color: white !important;
+        border-color: var(--correct-color) !important;
+    }
+
+    .option-btn.btn-incorrect {
+        background-color: var(--incorrect-color) !important;
+        color: white !important;
+        border-color: var(--incorrect-color) !important;
+    }
+
+    input[type="text"] {
+        width: 90%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 2px solid #e0d8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        outline: none;
+    }
+
+    input[type="text"]:focus {
+        border-color: var(--primary-lavender);
+    }
+
+    .comment-hint {
+        margin-top: 10px;
+        font-weight: bold;
+        color: var(--incorrect-color);
+        font-size: 15px;
+    }
+
+    .mistakes-list {
+        text-align: left;
+        background: #fff5f5;
+        padding: 15px 25px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid var(--incorrect-color);
+    }
+</style>
+
+<div class="container">
+    <h2>Irregular Verbs</h2>
+
+    @if (currentScreen == Screen.Home)
+    {
+        <!-- 1. ГЛАВНАЯ СТРАНИЦА: Справочник глаголов -->
+        <div>
+            @if (allVerbs == null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>V1</th>
+                            <th>V2</th>
+                            <th>V3</th>
+                            <th>Translate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in allVerbs)
+                        {
+                            <tr>
+                                <td><b>@v.Infinitive</b></td>
+                                <td>@v.PastSimple</td>
+                                <td>@v.PastParticiple</td>
+                                <td>@v.Translation</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <button class="btn-main" @onclick="StartTesting">Test yourself!</button>
+            }
+        </div>
+    }
+    else if (currentScreen == Screen.Test)
+    {
+        <!-- 2. ЭКРАН ТЕСТИРОВАНИЯ -->
+        <div>
+            <!-- Переключатель режима практики -->
+            <div>
+                <button class="btn-secondary @(currentTestType == "fill" ? "active" : "")" @onclick='() => SetTestType("fill")'>Write</button>
+                <button class="btn-secondary @(currentTestType == "translate" ? "active" : "")" @onclick='() => SetTestType("translate")'>translate</button>
+                <button class="btn-secondary @(currentTestType == "mc" ? "active" : "")" @onclick='() => SetTestType("mc")'>Choose V2 and V3</button>
+            </div>
+
+            <div class="card">
+                <div class="word-prompt">@testPrompt</div>
+                
+                @if (currentTestType == "fill")
+                {
+                    <input type="text" @bind="inputV2" placeholder="Past Simple (V2)" />
+                    <input type="text" @bind="inputV3" placeholder="Past Participle (V3)" />
+                    <button class="btn-main" style="background-color: @btnSubmitColor" @onclick="CheckFillAnswers">Проверить</button>
+                }
+                else
+                {
+                    <div class="options-grid">
+                        @foreach (var opt in mcOptions)
+                        {
+                            string cssClass = "option-btn";
+                            if (isAnswered)
+                            {
+                                if (opt == selectedOption)
+                                {
+                                    cssClass += opt == correctAnswer ? " btn-correct" : " btn-incorrect";
+                                }
+                                else if (opt == correctAnswer)
+                                {
+                                    cssClass += " btn-correct";
+                                }
+                            }
+                            <button class="@cssClass" @onclick="() => CheckOption(opt)">@opt</button>
+                        }
+                    </div>
+                }
+
+                <div class="comment-hint">@testComment</div>
+            </div>
+
+            <button class="btn-finish" @onclick="FinishTesting">Finish!</button>
+        </div>
+    }
+    else if (currentScreen == Screen.Results)
+    {
+        <!-- 3. ЭКРАН РЕЗУЛЬТАТОВ -->
+        <div>
+            <h3>Results</h3>
+            <p style="font-size: 20px;">Correct: <b style="color: var(--correct-color);">@statsCorrect</b> из <b>@statsTotal</b></p>
+
+            @if (mistakes.Count > 0)
+            {
+                <div>
+                    <h4>Mistakes:</h4>
+                    <div class="mistakes-list">
+                        @foreach (var m in mistakes)
+                        {
+                            <div>• @m</div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" style="flex:1" @onclick="ShowHomeScreen">See Verbs</button>
+                <button style="flex:1" @onclick="StartTesting">Continue Test</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private enum Screen { Home, Test, Results }
+    private Screen currentScreen = Screen.Home;
+
+    private List<Verb> allVerbs = new();
+    private Verb? currentVerb;
+    private string currentTestType = "fill"; // 'fill', 'translate', 'mc'
+
+    // Статистика
+    private int statsTotal = 0;
+    private int statsCorrect = 0;
+    private HashSet<string> mistakes = new();
+    private bool isAnswered = false;
+
+    // Состояние формы в режиме "fill"
+    private string inputV2 = "";
+    private string inputV3 = "";
+    private string btnSubmitColor = "var(--primary-lavender)";
+
+    // Состояние в режимах с выбором (translate, mc)
+    private string testPrompt = "";
+    private string testComment = "";
+    private List<string> mcOptions = new();
+    private string correctAnswer = "";
+    private string selectedOption = "";
+
+    private Random random = new Random();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVerbsList();
+    }
+
+    private async Task LoadVerbsList()
+{
+    try
+    {
+        allVerbs = await Http.GetFromJsonAsync<List<Verb>>("verbs.json") ?? new List<Verb>();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error: {ex.Message}");
+        allVerbs = new List<Verb>();
+    }
+}
+
+    private void ShowHomeScreen()
+    {
+        currentScreen = Screen.Home;
+    }
+
+    private void StartTesting()
+    {
+        statsTotal = 0;
+        statsCorrect = 0;
+        mistakes.Clear();
+        currentScreen = Screen.Test;
+        NextQuestion();
+    }
+
+    private void SetTestType(string type)
+    {
+        currentTestType = type;
+        NextQuestion();
+    }
+
+    private Verb GetRandomVerb()
+    {
+        return allVerbs[random.Next(allVerbs.Count)];
+    }
+
+    private void NextQuestion()
+    {
+        if (allVerbs == null || allVerbs.Count == 0) return;
+
+        isAnswered = false;
+        testComment = "";
+        inputV2 = "";
+        inputV3 = "";
+        selectedOption = "";
+        btnSubmitColor = "var(--primary-lavender)";
+        currentVerb = GetRandomVerb();
+
+        if (currentTestType == "fill")
+        {
+            testPrompt = $"{currentVerb.Infinitive} ({currentVerb.Translation})";
+        }
+        else if (currentTestType == "translate")
+        {
+            testPrompt = currentVerb.Translation;
+            GenerateMultipleChoiceOptions($"{currentVerb.PastSimple} / {currentVerb.PastParticiple}");
+        }
+        else if (currentTestType == "mc")
+        {
+            testPrompt = currentVerb.Infinitive;
+            GenerateMultipleChoiceOptions($"{currentVerb.PastSimple} / {currentVerb.PastParticiple}");
+        }
+    }
+
+    private void GenerateMultipleChoiceOptions(string correct)
+    {
+        correctAnswer = correct;
+        
+        var wrongOptions = allVerbs
+            .Where(v => v.Id != currentVerb?.Id)
+            .OrderBy(_ => random.Next())
+            .Take(3)
+            .Select(v => $"{v.PastSimple} / {v.PastParticiple}")
+            .ToList();
+
+        wrongOptions.Add(correctAnswer);
+        mcOptions = wrongOptions.OrderBy(_ => random.Next()).ToList();
+    }
+
+    private async Task CheckOption(string selected)
+    {
+        if (isAnswered || currentVerb == null) return;
+        
+        isAnswered = true;
+        selectedOption = selected;
+        statsTotal++;
+
+        if (selected == correctAnswer)
+        {
+            statsCorrect++;
+            StateHasChanged();
+            await Task.Delay(1000);
+            NextQuestion();
+        }
+        else
+        {
+            mistakes.Add($"{currentVerb.Infinitive} — {currentVerb.PastSimple} / {currentVerb.PastParticiple} ({currentVerb.Translation})");
+            testComment = $"Correct: {correctAnswer}";
+            StateHasChanged();
+            await Task.Delay(2000);
+            NextQuestion();
+        }
+    }
+
+    private async Task CheckFillAnswers()
+    {
+        if (isAnswered || currentVerb == null) return;
+
+        bool isV2Correct = inputV2.Trim().Equals(currentVerb.PastSimple, StringComparison.OrdinalIgnoreCase);
+        bool isV3Correct = inputV3.Trim().Equals(currentVerb.PastParticiple, StringComparison.OrdinalIgnoreCase);
+
+        isAnswered = true;
+        statsTotal++;
+
+        if (isV2Correct && isV3Correct)
+        {
+            btnSubmitColor = "var(--correct-color)";
+            statsCorrect++;
+            StateHasChanged();
+            await Task.Delay(1000);
+            NextQuestion();
+        }
+        else
+        {
+            btnSubmitColor = "var(--incorrect-color)";
+            mistakes.Add($"{currentVerb.Infinitive} — {currentVerb.PastSimple} / {currentVerb.PastParticiple} ({currentVerb.Translation})");
+            testComment = $"Answer: {currentVerb.PastSimple} / {currentVerb.PastParticiple}";
+            StateHasChanged();
+            await Task.Delay(2200);
+            NextQuestion();
+        }
+    }
+
+    private void FinishTesting()
+    {
+        currentScreen = Screen.Results;
+    }
+}

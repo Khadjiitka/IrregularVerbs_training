@@ -1,0 +1,7 @@
+[
+  { "id": 1, "infinitive": "be", "pastSimple": "was/were", "pastParticiple": "been", "translation": "быть" },
+  { "id": 2, "infinitive": "become", "pastSimple": "became", "pastParticiple": "become", "translation": "становиться" },
+  { "id": 3, "infinitive": "begin", "pastSimple": "began", "pastParticiple": "begun", "translation": "начинать" },
+  { "id": 4, "infinitive": "break", "pastSimple": "broke", "pastParticiple": "broken", "translation": "ломать" },
+  { "id": 5, "infinitive": "bring", "pastSimple": "brought", "pastParticiple": "brought", "translation": "приносить" }
+]
