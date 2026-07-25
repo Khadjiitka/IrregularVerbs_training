@@ -30,6 +30,10 @@ jobs:
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll
 
+
+      - name: Fix base href for GitHub Pages
+        run: sed -i 's/<base href="\/" \/>/<base href="\/IrregularVerbs_training\/" \/>/g' release/wwwroot/index.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
